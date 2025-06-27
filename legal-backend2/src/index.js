@@ -9,9 +9,12 @@ dotenv.config();
 
 // CORS configuration
 const corsOptions = {
-  origin: ['http://localhost:3000', 'https://legal-document-analysis-system.vercel.app'],          
-  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'], 
-  credentials: true                         
+  origin: [
+    'http://localhost:3000',
+    'https://legaleagle-uprx.onrender.com'
+  ],
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+  credentials: true
 };
 
 app.use(cors(corsOptions));
