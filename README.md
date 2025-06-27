@@ -2,130 +2,128 @@
 
 ## Project Overview
 
-The Legal Document Analysis System is a comprehensive platform designed to assist legal professionals and organizations in processing and understanding large volumes of legal documents. The system leverages advanced Natural Language Processing (NLP) and AI techniques to automatically analyze, extract, and summarize key information from legal documents such as contracts, agreements, and filings.
-
-By automating the extraction of clauses, identifying risk factors, detecting potential fraud or inconsistencies, and generating plain-English summaries, this system aims to reduce manual effort, minimize errors, and accelerate legal workflows.
+The Legal Document Analysis System is a platform to help legal professionals analyze, summarize, and extract key information from legal documents using AI. It supports PDF, DOCX, and TXT files, and provides risk detection, fraud indicators, grammatical issue detection, and plain-English summaries.
 
 ---
 
 ## Key Features
 
-- Upload and manage legal documents in multiple formats (PDF, DOCX, TXT)
+- Upload and manage legal documents (PDF, DOCX, TXT)
 - Automated extraction of key clauses and legal entities
-- AI-powered document summarization for quick understanding
+- AI-powered document summarization and risk detection
 - Detection of potential risks, fraud indicators, and compliance issues
 - Identification of grammatical and formatting issues
-- Export structured analysis results in JSON or other formats for integration
-- Support for multi-year and multi-type legal documents with adaptive processing
+- Modern React frontend and serverless Node.js backend
+- Deployable to Vercel with a single click
 
 ---
 
 ## Technology Stack
 
-- **Backend:** Node.js with Express.js framework
-- **Database:** MongoDB for storing documents and analysis metadata
-- **File Handling:** Multer for secure file uploads, native file system operations for storage
-- **AI & NLP:** Integration with custom or third-party AI models (e.g., Hugging Face transformers, OpenAI GPT models)
-- **Deployment:** Suitable for containerization and cloud deployment (Docker, Kubernetes, AWS, etc.)
+- **Frontend:** React + Tailwind CSS
+- **Backend:** Node.js (Express, serverless-ready)
+- **Database:** Firebase Firestore (no MongoDB required)
+- **AI/NLP:** OpenRouter (LLM API integration)
+- **Deployment:** Vercel (monorepo, serverless functions)
 
 ---
 
-## Getting Started
+## Getting Started (Local Development)
 
 ### Prerequisites
+- Node.js (v16 or above)
+- npm or yarn
+- Firebase project (with Firestore enabled)
+- OpenRouter API key
 
-- Node.js (v14 or above)
-- npm or yarn package manager
-- MongoDB instance (local or cloud)
-- Access credentials or API keys for AI/NLP services (if applicable)
+### 1. Clone the repository
+```bash
+git clone https://github.com/your-username/legal-document-analysis.git
+cd legal-document-analysis
+```
 
-### Installation Steps
+### 2. Install dependencies for both frontend and backend
+```bash
+cd frontend1 && npm install
+cd ../legal-backend2 && npm install
+```
 
-1. Clone the repository:
+### 3. Firebase Setup
+- Go to the [Firebase Console](https://console.firebase.google.com/), create a project, and enable Firestore.
+- Go to Project Settings > Service Accounts > Generate new private key.
+- Download the `serviceAccountKey.json` and place it in `legal-backend2/`.
 
-   ```bash
-   git clone https://github.com/your-username/legal-document-analysis.git
-   cd legal-document-analysis
-   ```
+### 4. Environment Variables
+Create a `.env` file in `legal-backend2/` with:
+```
+OPENROUTER_API_KEY=your_openrouter_api_key
+```
 
-````
+### 5. Start the Backend
+```bash
+cd legal-backend2
+npm run dev
+```
 
-2. Install dependencies:
+### 6. Start the Frontend
+```bash
+cd ../frontend1
+npm start
+```
 
-   ```bash
-   npm install
-   ```
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:5000/api/docs
 
-3. Create a `.env` file in the root directory and add necessary environment variables:
+---
 
-   ```
-   PORT=5000
-   MONGODB_URI=your_mongodb_connection_string
-   AI_API_KEY=your_ai_service_api_key  # Optional, if using third-party AI APIs
-   ```
+## Deploying to Vercel
 
-4. Start the development server:
+1. **Push your code to GitHub/GitLab.**
+2. **Go to [Vercel](https://vercel.com/), import your repo as a new project.**
+3. **Set Environment Variables in Vercel Project Settings:**
+   - `OPENROUTER_API_KEY` (your OpenRouter API key)
+   - `FIREBASE_SERVICE_ACCOUNT` (paste the entire contents of your `serviceAccountKey.json` as a single value)
+4. **Deploy!**
 
-   ```bash
-   npm run dev
-   ```
-
-5. The API server will be running on `http://localhost:5000` by default.
+Vercel will build both the frontend and backend automatically using the `vercel.json` config.
 
 ---
 
 ## Project Structure
 
 ```
-/uploads          # Directory for storing uploaded documents
-/controllers      # Express route controllers handling API logic
-/models           # Mongoose schema definitions for MongoDB collections
-/routes           # API endpoint route definitions
-/services         # Business logic and utility functions (e.g., file processing, AI integration)
-/config           # Configuration files, including database and environment setup
-/middleware       # Custom middleware for authentication, error handling, etc.
+/legal-backend2      # Node.js backend (Express, serverless-ready)
+/frontend1           # React frontend
+/vercel.json         # Vercel monorepo configuration
 ```
 
 ---
 
-## API Documentation
+## API Endpoints
 
-| HTTP Method | Endpoint             | Description                                                    |
-| ----------- | -------------------- | -------------------------------------------------------------- |
-| POST        | `/api/documents`     | Upload a new legal document for analysis                       |
-| GET         | `/api/documents/:id` | Retrieve analysis results and metadata for a specific document |
-| DELETE      | `/api/documents/:id` | Remove a document and its associated data                      |
-
-### Example: Upload Document Request
-
-* **Endpoint:** `POST /api/documents`
-* **Request Type:** Multipart/form-data
-* **Parameters:**
-
-  * `file` (required) – The legal document file to upload (PDF, DOCX, TXT)
-* **Response:** JSON object containing document metadata and initial analysis status
+| HTTP Method | Endpoint                      | Description                                 |
+| ----------- | ----------------------------- | ------------------------------------------- |
+| POST        | `/api/docs/upload`            | Upload a new legal document                 |
+| POST        | `/api/docs/analyze/:id`       | Analyze a document for risks/entities       |
+| POST        | `/api/docs/summarize/:id`     | Summarize a document with AI                |
+| GET         | `/api/docs/`                  | List all documents                          |
+| DELETE      | `/api/docs/:id`               | Delete a document                           |
 
 ---
 
 ## Usage Notes
-
-* The system supports large-scale batch processing and can handle documents spanning multiple years.
-* AI/NLP services should be configured with valid API keys if using external models.
-* Uploaded documents are stored securely on the server’s filesystem or cloud storage, and sensitive information must be handled according to compliance requirements.
-* Error handling and validation are implemented to ensure robust and secure operations.
+- All AI features require a valid OpenRouter API key.
+- Firestore is used for all document storage and metadata.
+- Rate limiting is enabled for AI endpoints (3 requests/minute per IP).
+- For production, set all secrets in Vercel's Environment Variables UI.
 
 ---
 
 ## Contribution Guidelines
 
-Contributions are welcome to improve features, fix bugs, or enhance documentation. Please follow these steps to contribute:
+Contributions are welcome! Please fork the repo, create a feature branch, and open a pull request.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature-name`)
-3. Commit your changes (`git commit -m 'Add some feature'`)
-4. Push to the branch (`git push origin feature-name`)
-5. Open a Pull Request explaining your changes
+---
 
-Please ensure code quality with proper testing and adhere to the existing project style.
-
-````
+## License
+MIT
