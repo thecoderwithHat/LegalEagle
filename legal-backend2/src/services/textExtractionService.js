@@ -18,6 +18,8 @@ exports.extractTextFromFile = async (filePath, originalname) => {
     } else if (ext === 'docx') {
       const result = await mammoth.extractRawText({ path: filePath });
       return result.value;
+    } else if (ext === 'txt') {
+      return fs.readFileSync(filePath, 'utf8');
     } else {
       throw new Error('Unsupported file type');
     }

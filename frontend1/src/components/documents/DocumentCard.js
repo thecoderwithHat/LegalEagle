@@ -14,7 +14,8 @@ export default function DocumentCard({ document }) {
   return (
     <animated.div style={springs}>
       <Link 
-        to={`/documents/${document._id}`}
+        to={`/documents/${document.id}`}
+        state={{ document: document }}
         className="bg-white group block rounded-xl p-6 shadow-sm hover:shadow-md transition-all"
       >
         <div className="flex items-start justify-between mb-4">
@@ -30,7 +31,7 @@ export default function DocumentCard({ document }) {
         <div className="flex items-center justify-between">
           <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-sm">
             <FiFileText className="mr-2" />
-            {document.filename.split('.').pop().toUpperCase()}
+            {document.originalname.split('.').pop().toUpperCase()}
           </span>
           <div className="flex space-x-2">
             {risks.slice(0, 2).map((risk, i) => (

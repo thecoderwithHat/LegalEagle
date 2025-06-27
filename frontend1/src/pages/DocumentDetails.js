@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FiTrash2, FiFileText, FiAlertTriangle } from 'react-icons/fi';
 import { ThreeDots } from 'react-loader-spinner';
 import { fetchDocumentAnalysis, fetchDocumentSummary, deleteDocument } from '../services/Api';
@@ -32,51 +31,57 @@ class ErrorBoundary extends React.Component {
 export default function DocumentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [document, setDocument] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+
+  // Immediately set document from navigation state, if available
+  const [document, setDocument] = useState(location.state?.document || null);
+  const [loading, setLoading] = useState(!document); // Only load if we don't have the doc
 
   useEffect(() => {
     if (!id) return;
 
-    const loadDocument = async () => {
-      try {
-        const [summaryRes, analysisRes] = await Promise.all([
-          fetchDocumentSummary(id),
-          fetchDocumentAnalysis(id)
-        ]);
-
-        const docSummary = summaryRes?.data?.summary;
-        const analysisData = analysisRes?.data;
-
-        const docData = {
-          id,
-          filename: analysisData?.originalname || 'Document',
-          upload_date: analysisData?.uploadedAt || new Date(),
-          text: analysisData?.text || '',
-          analysis: {
-            summary: docSummary?.document_type || 'No document type available',
-            risks: docSummary?.identified_risks || [],
-            grammaticalIssues: docSummary?.grammatical_issues || [],
-            fraudIndicators: docSummary?.fraud_indicators || [],
-            plainEnglishSummary: docSummary?.plain_english_summary || ''
-          },
-          entities: {
-              organizations: analysisData?.highlights?.organizations || [],
-              dates: analysisData?.highlights?.dates || []
-          },
-        };
-
-        setDocument(docData);
-      } catch (error) {
-        console.error('Document load error:', error);
-        navigate('/documents');
-      } finally {
+    const loadDocumentData = async () => {
+      // If we don't have the document data from navigation, we can't proceed
+      if (!document) {
+        console.error("Document data not available from navigation.");
         setLoading(false);
+        // Optionally, navigate away or try to fetch the base document
+        navigate('/documents');
+        return;
+      }
+      
+      setLoading(false); // We have basic info, stop full-page loading
+
+      // Fetch summary
+      try {
+        const summaryRes = await fetchDocumentSummary(id);
+        if (summaryRes.data.summary) {
+          setDocument(prevDoc => ({
+            ...prevDoc,
+            analysis: { ...prevDoc.analysis, ...summaryRes.data.summary }
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch summary:', error);
+      }
+
+      // Fetch analysis
+      try {
+        const analysisRes = await fetchDocumentAnalysis(id);
+        if (analysisRes.data) {
+          setDocument(prevDoc => ({
+            ...prevDoc,
+            analysis: { ...prevDoc.analysis, ...analysisRes.data },
+            entities: analysisRes.data.highlights, // Populate entities
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch analysis:', error);
       }
     };
 
-    loadDocument();
-  }, [id, navigate]);
+    loadDocumentData();
+  }, [id, navigate, document]); // Add document to dependency array
 
   const handleDeleteDocument = async () => {
     if (window.confirm('Are you sure you want to delete this document?')) {
@@ -105,14 +110,21 @@ export default function DocumentDetail() {
     );
   }
 
+  // Default values for rendering before all data has arrived
+  const analysis = document.analysis || {};
+  const entities = document.entities || {};
+  const risks = analysis.identified_risks || [];
+  const grammaticalIssues = analysis.grammatical_issues || [];
+  const fraudIndicators = analysis.fraud_indicators || [];
+
   return (
     <ErrorBoundary>
       <div className="pt-24 px-4 max-w-7xl mx-auto">
         <div className="flex justify-between items-start mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{document.filename}</h1>
+            <h1 className="text-3xl font-bold text-gray-900">{document.originalname || 'Document'}</h1>
             <p className="text-gray-500 mt-2">
-              Uploaded: {new Date(document.upload_date).toLocaleDateString()}
+              Uploaded: {new Date(document.createdAt || Date.now()).toLocaleDateString()}
             </p>
           </div>
           <button
@@ -128,7 +140,7 @@ export default function DocumentDetail() {
           <AnalysisSection
             title="Document Type"
             icon={<FiFileText />}
-            content={document.analysis.summary}
+            content={analysis.document_type || <ThreeDots color="#4F46E5" height={20} width={20} />}
           />
 
           <ErrorBoundary>
@@ -136,9 +148,9 @@ export default function DocumentDetail() {
               title="Identified Risks"
               icon={<FiAlertTriangle />}
               content={
-                document.analysis.risks.length > 0 ? (
-                  <RiskChart risks={document.analysis.risks} />
-                ) : 'No risks identified'
+                risks.length > 0 ? (
+                  <RiskChart risks={risks} />
+                ) : (analysis.document_type ? 'No risks identified' : <ThreeDots color="#4F46E5" height={20} width={20} />)
               }
             />
           </ErrorBoundary>
@@ -148,13 +160,13 @@ export default function DocumentDetail() {
               title="Grammatical Issues"
               icon={<FiFileText />}
               content={
-                document.analysis.grammaticalIssues.length > 0 ? (
+                grammaticalIssues.length > 0 ? (
                   <ul className="list-disc list-inside">
-                    {document.analysis.grammaticalIssues.map((issue, index) => (
+                    {grammaticalIssues.map((issue, index) => (
                       <li key={index}>{issue}</li>
                     ))}
                   </ul>
-                ) : 'No grammatical issues found'
+                ) : (analysis.document_type ? 'No grammatical issues found' : <ThreeDots color="#4F46E5" height={20} width={20} />)
               }
             />
           </ErrorBoundary>
@@ -164,13 +176,13 @@ export default function DocumentDetail() {
               title="Fraud Indicators"
               icon={<FiAlertTriangle />}
               content={
-                document.analysis.fraudIndicators.length > 0 ? (
+                fraudIndicators.length > 0 ? (
                   <ul className="list-disc list-inside">
-                    {document.analysis.fraudIndicators.map((indicator, index) => (
+                    {fraudIndicators.map((indicator, index) => (
                       <li key={index}>{indicator}</li>
                     ))}
                   </ul>
-                ) : 'No fraud indicators detected'
+                ) : (analysis.document_type ? 'No fraud indicators detected' : <ThreeDots color="#4F46E5" height={20} width={20} />)
               }
             />
           </ErrorBoundary>
@@ -179,7 +191,7 @@ export default function DocumentDetail() {
             <AnalysisSection
               title="Plain-English Summary"
               icon={<FiFileText />}
-              content={document.analysis.plainEnglishSummary || 'No plain-English summary available'}
+              content={analysis.plain_english_summary || <ThreeDots color="#4F46E5" height={20} width={20} />}
             />
           </ErrorBoundary>
 
@@ -188,9 +200,9 @@ export default function DocumentDetail() {
               title="Entity & Clause"
               icon={<FiFileText />}
               content={
-                document.entities && Object.keys(document.entities).length > 0 ? (
-                  <EntityVisualization entities={document.entities} />
-                ) : 'No entities available'
+                Object.keys(entities).length > 0 ? (
+                  <EntityVisualization entities={entities} />
+                ) : (analysis.document_type ? 'No entities available' : <ThreeDots color="#4F46E5" height={20} width={20} />)
               }
             />
           </ErrorBoundary>

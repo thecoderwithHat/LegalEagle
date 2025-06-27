@@ -82,8 +82,16 @@
 
 import axios from 'axios';
 
+const getApiBaseUrl = () => {
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:5000/api/docs';
+  }
+  // Use environment variable for production, with a fallback to your Render URL
+  return process.env.REACT_APP_API_URL || 'https://legal-document-analysis-system-g6tz.onrender.com/api/docs';
+};
+
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'https://legal-document-analysis-system-g6tz.onrender.com/api/docs',
+  baseURL: getApiBaseUrl(),
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json'
@@ -111,13 +119,13 @@ api.interceptors.response.use(
 
 // API functions
 export const fetchDocuments = () =>
-  api.get('/history');
+  api.get('/');
 
 export const fetchDocumentAnalysis = (id) =>
-  api.get(`/analyze/${id}`);
+  api.post(`/analyze/${id}`);
 
 export const fetchDocumentSummary = (id) =>
-  api.get(`/summary/${id}`);
+  api.post(`/summarize/${id}`);
 
 export const uploadDocument = (file, onUploadProgress) => {
   const formData = new FormData();
@@ -134,4 +142,4 @@ export const uploadDocument = (file, onUploadProgress) => {
 };
 
 export const deleteDocument = (id) =>
-  api.delete(`/delete/${id}`);
+  api.delete(`/${id}`);

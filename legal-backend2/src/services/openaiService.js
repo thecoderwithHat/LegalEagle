@@ -1,8 +1,10 @@
 const axios = require('axios');
 require('dotenv').config();
+const { jsonrepair } = require('jsonrepair');
+const rateLimit = require('express-rate-limit');
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const MODEL_NAME = 'minimax/minimax-m1:extended';
+const MODEL_NAME = 'qwen/qwen3-8b:free';
 
 exports.summarizeDocumentText = async (text) => {
   if (!text || text.trim().length === 0) {
@@ -60,18 +62,29 @@ ${documentText}
     const rawReply = response.data?.choices?.[0]?.message?.content?.trim();
     if (!rawReply) throw new Error('No summary returned by the model');
 
+    // Remove code block markers if present
+    let cleanedReply = rawReply.replace(/^```json\s*/i, '').replace(/^```/, '').replace(/```$/g, '').trim();
+
     let parsedJson;
     try {
-      parsedJson = JSON.parse(rawReply);
+      parsedJson = JSON.parse(cleanedReply);
     } catch (parseError) {
-      console.error('Failed to parse JSON:', parseError);
-      console.error('Raw reply was:', rawReply);
-      throw new Error('Model did not return valid JSON.');
+      try {
+        // Try to repair the JSON
+        parsedJson = JSON.parse(jsonrepair(cleanedReply));
+      } catch (repairError) {
+        console.error('Failed to parse/repair JSON:', repairError);
+        console.error('Raw reply was:', rawReply);
+        throw new Error('Model did not return valid JSON.');
+      }
     }
 
     return parsedJson;
 
   } catch (err) {
+    if (err.response?.data?.error?.message?.includes('Rate limit exceeded')) {
+      throw new Error('AI service is busy (rate limit exceeded). Please wait a minute and try again.');
+    }
     console.error('OpenRouter summarization error:', err.response?.data || err.message);
     throw new Error('Document summarization failed. Please check the API key, model, or content format.');
   }

@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { ThreeDots } from 'react-loader-spinner';
 import DocumentCard from '../components/documents/DocumentCard';
@@ -37,7 +35,7 @@ export default function DocumentList() {
       documents && documents.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {documents.map((doc) => (
-            <DocumentCard key={doc._id} document={doc} />
+            <DocumentCard key={doc.id} document={doc} />
           ))}
         </div>
       )

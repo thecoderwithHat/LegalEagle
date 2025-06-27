@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import DragDropZone from '../components/common/DragDropZone';
 import FeatureGrid from '../components/common/FeatureGrid';
-import axios from 'axios';
+import { uploadDocument } from '../services/Api';
 import { useNavigate } from 'react-router-dom';
 
 
@@ -16,21 +16,15 @@ const Home = () => {
       setUploadProgress(0);
       return;
     }
-
-    const formData = new FormData();
-    formData.append('file', file);
     
     try {
-      const response = await axios.post('https://legal-document-analysis-system-g6tz.onrender.com/api/docs/upload', formData, {
-        onUploadProgress: (progressEvent) => {
-          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percent);
-        }
+      const response = await uploadDocument(file, (progressEvent) => {
+        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        setUploadProgress(percent);
       });
-      console.log("response",response);
-      if (response.status === 200) {
-        navigate(`/documents/${response.data.document._id}`);
 
+      if (response.status === 200) {
+        navigate(`/documents/${response.data.document.id}`);
       }
     } catch (error) {
       setUploadError(error.response?.data?.message || 'Upload failed');
