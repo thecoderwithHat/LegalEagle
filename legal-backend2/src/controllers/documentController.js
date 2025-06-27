@@ -55,6 +55,12 @@ exports.analyzeDocument = async (req, res) => {
     }
 
     const documentData = doc.data();
+
+    // --- Caching: Return cached analysis if available ---
+    if (documentData.type && documentData.highlights) {
+      return res.json({ type: documentData.type, highlights: documentData.highlights, text: documentData.text });
+    }
+
     const type = classifyDocumentType(documentData.text);
     const highlights = extractHighlights(documentData.text);
 
@@ -81,6 +87,13 @@ exports.summarizeDocument = async (req, res) => {
     }
     
     const documentData = doc.data();
+
+    // --- Caching: Return cached summary if available ---
+    if (documentData.summary) {
+      return res.json({ summary: documentData.summary });
+    }
+
+    // Always use single-chunk summarization
     const summary = await summarizeDocumentText(documentData.text);
 
     // Update the document in Firestore with the summary

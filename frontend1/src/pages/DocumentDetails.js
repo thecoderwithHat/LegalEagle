@@ -81,7 +81,7 @@ export default function DocumentDetail() {
     };
 
     loadDocumentData();
-  }, [id, navigate, document]); // Add document to dependency array
+  }, [id, navigate]);
 
   const handleDeleteDocument = async () => {
     if (window.confirm('Are you sure you want to delete this document?')) {

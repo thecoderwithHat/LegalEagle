@@ -3,8 +3,11 @@ require('dotenv').config();
 const { jsonrepair } = require('jsonrepair');
 const rateLimit = require('express-rate-limit');
 
+// Parse key from env (single key)
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const MODEL_NAME = 'qwen/qwen3-8b:free';
+if (!OPENROUTER_API_KEY) throw new Error('No OpenRouter API key configured');
+
+const MODEL_NAME = 'google/gemini-2.0-flash-exp:free';
 
 exports.summarizeDocumentText = async (text) => {
   if (!text || text.trim().length === 0) {
@@ -88,4 +91,32 @@ ${documentText}
     console.error('OpenRouter summarization error:', err.response?.data || err.message);
     throw new Error('Document summarization failed. Please check the API key, model, or content format.');
   }
+};
+
+// Summarize a large document by splitting into chunks and combining summaries
+exports.summarizeLargeDocumentText = async (text) => {
+  if (!text || text.trim().length === 0) {
+    throw new Error('No text provided for summarization');
+  }
+
+  const MAX_CHARS = 3000;
+  const chunks = [];
+  for (let i = 0; i < text.length; i += MAX_CHARS) {
+    chunks.push(text.slice(i, i + MAX_CHARS));
+  }
+
+  const summaries = [];
+  for (const chunk of chunks) {
+    try {
+      const result = await exports.summarizeDocumentText(chunk);
+      if (result && result.plain_english_summary) {
+        summaries.push(result.plain_english_summary);
+      }
+    } catch (err) {
+      summaries.push('[Error summarizing chunk]');
+    }
+  }
+
+  // Combine all chunk summaries into one
+  return { summary: summaries.join('\n\n') };
 };
