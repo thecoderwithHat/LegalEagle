@@ -83,11 +83,12 @@
 import axios from 'axios';
 
 const getApiBaseUrl = () => {
+  // Use localhost for development
   if (process.env.NODE_ENV === 'development') {
     return 'http://localhost:5000/api/docs';
   }
-  // Use environment variable for production, with a fallback to your Render URL
-  return process.env.REACT_APP_API_URL || 'https://legal-document-analysis-system-g6tz.onrender.com/api/docs';
+  // Use a relative path for production (Vercel, Render, etc.)
+  return '/api/docs';
 };
 
 const api = axios.create({

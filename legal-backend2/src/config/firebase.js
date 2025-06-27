@@ -1,11 +1,14 @@
 const admin = require('firebase-admin');
-const path = require('path');
 
-// Build an absolute path to the service account key
-const serviceAccountPath = path.join(__dirname, '..', '..', 'serviceAccountKey.json');
+// This configuration is platform-agnostic.
+// It reads credentials from an environment variable in production (Vercel/Render)
+// and falls back to the local JSON file for development.
+const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
+  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+  : require('../../serviceAccountKey.json');
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccountPath)
+  credential: admin.credential.cert(serviceAccount)
 });
 
 const db = admin.firestore();
