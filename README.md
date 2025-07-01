@@ -112,10 +112,10 @@ Vercel will build both the frontend and backend automatically using the `vercel.
 ---
 
 ## Usage Notes
-- All AI features require a valid OpenRouter API key.
-- Firestore is used for all document storage and metadata.
-- Rate limiting is enabled for AI endpoints (3 requests/minute per IP).
-- For production, set all secrets in Vercel's Environment Variables UI.
+- All AI features require a valid OpenRouter API key
+- Firestore is used for all document storage and metadata
+- Rate limiting is enabled for AI endpoints (3 requests/minute per IP)
+- For production, set all secrets in Vercel's Environment Variables UI
 
 ---
 
