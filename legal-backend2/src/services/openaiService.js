@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 if (!OPENROUTER_API_KEY) throw new Error('No OpenRouter API key configured');
 
-const MODEL_NAME = 'google/gemini-2.0-flash-exp:free';
+const MODEL_NAME = 'google/gemma-4-31b-it';
 
 exports.summarizeDocumentText = async (text) => {
   if (!text || text.trim().length === 0) {
