@@ -23,7 +23,7 @@ The Legal Document Analysis System is a platform to help legal professionals ana
 - **Frontend:** React + Tailwind CSS
 - **Backend:** Node.js (Express, serverless-ready)
 - **Database:** Firebase Firestore (no MongoDB required)
-- **AI/NLP:** OpenRouter (LLM API integration)
+- **AI/NLP:** OpenRouter or Gemini (backend-configured provider)
 - **Deployment:** Vercel (monorepo, serverless functions)
 
 ---
@@ -34,7 +34,7 @@ The Legal Document Analysis System is a platform to help legal professionals ana
 - Node.js (v16 or above)
 - npm or yarn
 - Firebase project (with Firestore enabled)
-- OpenRouter API key
+- OpenRouter API key or Gemini API key
 
 ### 1. Clone the repository
 ```bash
@@ -57,7 +57,16 @@ cd ../legal-backend2 && npm install
 Create a `.env` file in `legal-backend2/` with:
 ```
 OPENROUTER_API_KEY=your_openrouter_api_key
+GEMINI_API_KEY=your_gemini_api_key
+AI_PROVIDER=openrouter
+OPENROUTER_MODEL=google/gemma-4-31b-it
+GEMINI_MODEL=gemini-1.5-flash
 ```
+
+Provider notes:
+- `AI_PROVIDER` supports `openrouter` and `gemini`.
+- If `AI_PROVIDER` is not set, backend defaults to `openrouter`.
+- `OPENROUTER_MODEL` and `GEMINI_MODEL` are optional overrides.
 
 ### 5. Start the Backend
 ```bash
@@ -82,6 +91,10 @@ npm start
 2. **Go to [Vercel](https://vercel.com/), import your repo as a new project.**
 3. **Set Environment Variables in Vercel Project Settings:**
    - `OPENROUTER_API_KEY` (your OpenRouter API key)
+   - `GEMINI_API_KEY` (required only when `AI_PROVIDER=gemini`)
+   - `AI_PROVIDER` (`openrouter` or `gemini`)
+   - `OPENROUTER_MODEL` (optional OpenRouter model override)
+   - `GEMINI_MODEL` (optional Gemini model override)
    - `FIREBASE_SERVICE_ACCOUNT` (paste the entire contents of your `serviceAccountKey.json` as a single value)
 4. **Deploy!**
 
@@ -112,9 +125,10 @@ Vercel will build both the frontend and backend automatically using the `vercel.
 ---
 
 ## Usage Notes
-- All AI features require a valid OpenRouter API key
+- AI summarization requires the API key for the selected provider (`OPENROUTER_API_KEY` or `GEMINI_API_KEY`)
 - Firestore is used for all document storage and metadata
 - Rate limiting is enabled for AI endpoints (3 requests/minute per IP)
+- Summary cache includes provider/model metadata, so changing providers regenerates cached summaries automatically
 - For production, set all secrets in Vercel's Environment Variables UI
 
 ---

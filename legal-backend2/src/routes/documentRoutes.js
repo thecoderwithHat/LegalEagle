@@ -13,12 +13,32 @@ const {
   deleteDocument
 } = require('../controllers/documentController');
 
-// Rate limiter: max 3 requests per minute per IP for AI endpoints
-const aiLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 3,
-  message: 'Too many AI requests from this IP, please try again after a minute.'
-});
+const passthroughLimiter = (req, res, next) => next();
+const isProduction = process.env.NODE_ENV === 'production';
+
+const createAiLimiter = (defaultMax, message) => {
+  if (!isProduction) {
+    return passthroughLimiter;
+  }
+
+  const max = Number(process.env.AI_RATE_LIMIT_MAX || defaultMax);
+  return rateLimit({
+    windowMs: 60 * 1000,
+    max: Number.isFinite(max) && max > 0 ? max : defaultMax,
+    message
+  });
+};
+
+// In production, keep throttling enabled to protect AI endpoints.
+const summarizeLimiter = createAiLimiter(
+  3,
+  'Too many summary requests from this IP, please try again after a minute.'
+);
+
+const analyzeLimiter = createAiLimiter(
+  3,
+  'Too many analysis requests from this IP, please try again after a minute.'
+);
 
 router.post('/upload', upload.single('file'), uploadDocument);
 
@@ -26,10 +46,10 @@ router.post('/upload', upload.single('file'), uploadDocument);
 router.get('/', getAllDocuments);
 
 // Route to analyze a document (rate limited)
-router.post('/analyze/:id', aiLimiter, analyzeDocument);
+router.post('/analyze/:id', analyzeLimiter, analyzeDocument);
 
 // Route to summarize a document (rate limited)
-router.post('/summarize/:id', aiLimiter, summarizeDocument);
+router.post('/summarize/:id', summarizeLimiter, summarizeDocument);
 
 // Route to get a single document by ID (must be after specific routes)
 router.get('/:id', getDocumentById);

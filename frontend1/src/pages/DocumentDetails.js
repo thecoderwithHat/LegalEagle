@@ -41,8 +41,8 @@ export default function DocumentDetail() {
     if (!id) return;
 
     const loadDocumentData = async () => {
-      // If we don't have the document data from navigation, fetch it from the API
-      if (!document) {
+      // If we don't have matching document data, fetch it from the API.
+      if (!document || document.id !== id) {
         try {
           const docRes = await fetchDocument(id);
           setDocument(docRes.data);
@@ -85,7 +85,8 @@ export default function DocumentDetail() {
     };
 
     loadDocumentData();
-  }, [id, navigate, document]);
+    // Intentionally omit `document` to avoid re-triggering requests after setDocument.
+  }, [id, navigate]);
 
   const handleDeleteDocument = async () => {
     if (window.confirm('Are you sure you want to delete this document?')) {
@@ -203,6 +204,7 @@ export default function DocumentDetail() {
             <AnalysisSection
               title="Entity & Clause"
               icon={<FiFileText />}
+              contentClassName="max-h-[26rem] overflow-y-auto min-h-0"
               content={
                 Object.keys(entities).length > 0 ? (
                   <EntityVisualization entities={entities} />

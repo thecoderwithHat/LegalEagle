@@ -2,7 +2,7 @@ const fs = require('fs');
 const db = require('../config/firebase'); // Import Firestore database instance
 const { extractTextFromFile } = require('../services/textExtractionService');
 const { classifyDocumentType, extractHighlights } = require('../services/analysisService');
-const { summarizeDocumentText } = require('../services/openaiService');
+const { summarizeDocumentText, getActiveAiConfig } = require('../services/openaiService');
 
 const documentsCollection = db.collection('documents');
 
@@ -116,22 +116,36 @@ exports.summarizeDocument = async (req, res) => {
     }
     
     const documentData = doc.data();
+    const activeAiConfig = getActiveAiConfig();
+    const cachedProvider = documentData.summaryMeta?.provider;
+    const cachedModel = documentData.summaryMeta?.model;
+    const isCacheMatch =
+      documentData.summary &&
+      cachedProvider === activeAiConfig.provider &&
+      cachedModel === activeAiConfig.model;
 
-    // --- Caching: Return cached summary if available ---
-    if (documentData.summary) {
-      return res.json({ summary: documentData.summary });
+    // Reuse cached summary only if it matches active provider+model config.
+    if (isCacheMatch) {
+      return res.json({ summary: documentData.summary, summaryMeta: documentData.summaryMeta });
     }
 
     // Always use single-chunk summarization
     const summary = await summarizeDocumentText(documentData.text);
+    const summaryMeta = {
+      ...activeAiConfig,
+      generatedAt: new Date().toISOString()
+    };
 
-    // Update the document in Firestore with the summary
-    await docRef.update({ summary: summary });
+    // Update the document in Firestore with summary and metadata.
+    await docRef.update({ summary: summary, summaryMeta: summaryMeta });
 
-    res.json({ summary });
+    res.json({ summary, summaryMeta });
   } catch (err) {
     console.error('Error summarizing document:', err.message);
-    res.status(500).json({ error: 'Failed to summarize document. Please try again later.' });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({
+      error: isDev ? err.message : 'Failed to summarize document. Please try again later.'
+    });
   }
 };
 
