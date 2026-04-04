@@ -42,11 +42,11 @@ const Footer = () => {
           {/* Copyright */}
           <div className="pt-4 border-t border-gray-200">
             <p className="text-sm text-gray-600">
-              © {new Date().getFullYear()} LegalMate. All rights reserved.
+              © {new Date().getFullYear()} LegalEagle. All rights reserved.
             </p>
-            <p className="text-xs text-gray-500 mt-1">
+            {/* <p className="text-xs text-gray-500 mt-1">
               Developed by Group-04, REC Bijnor
-            </p>
+            </p> */}
           </div>
         </div>
       </div>

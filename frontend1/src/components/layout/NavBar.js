@@ -16,7 +16,7 @@ export default function NavBar() {
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center space-x-2">
             <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              LegalMate
+              LegalEagle
             </span>
           </Link>
           <div className="flex space-x-4">

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FiTrash2, FiFileText, FiAlertTriangle } from 'react-icons/fi';
 import { ThreeDots } from 'react-loader-spinner';
-import { fetchDocumentAnalysis, fetchDocumentSummary, deleteDocument } from '../services/Api';
+import { fetchDocument, fetchDocumentAnalysis, fetchDocumentSummary, deleteDocument } from '../services/Api';
 import AnalysisSection from '../components/common/AnalysisSection';
 import RiskChart from '../components/documents/RiskChart';
 import EntityVisualization from '../components/documents/EntityVisualization';
@@ -41,13 +41,17 @@ export default function DocumentDetail() {
     if (!id) return;
 
     const loadDocumentData = async () => {
-      // If we don't have the document data from navigation, we can't proceed
+      // If we don't have the document data from navigation, fetch it from the API
       if (!document) {
-        console.error("Document data not available from navigation.");
-        setLoading(false);
-        // Optionally, navigate away or try to fetch the base document
-        navigate('/documents');
-        return;
+        try {
+          const docRes = await fetchDocument(id);
+          setDocument(docRes.data);
+        } catch (error) {
+          console.error("Failed to fetch document:", error);
+          setLoading(false);
+          navigate('/documents');
+          return;
+        }
       }
       
       setLoading(false); // We have basic info, stop full-page loading
@@ -58,7 +62,7 @@ export default function DocumentDetail() {
         if (summaryRes.data.summary) {
           setDocument(prevDoc => ({
             ...prevDoc,
-            analysis: { ...prevDoc.analysis, ...summaryRes.data.summary }
+            analysis: { ...prevDoc?.analysis, ...summaryRes.data.summary }
           }));
         }
       } catch (error) {
@@ -71,7 +75,7 @@ export default function DocumentDetail() {
         if (analysisRes.data) {
           setDocument(prevDoc => ({
             ...prevDoc,
-            analysis: { ...prevDoc.analysis, ...analysisRes.data },
+            analysis: { ...prevDoc?.analysis, ...analysisRes.data },
             entities: analysisRes.data.highlights, // Populate entities
           }));
         }
@@ -81,7 +85,7 @@ export default function DocumentDetail() {
     };
 
     loadDocumentData();
-  }, [id, navigate]);
+  }, [id, navigate, document]);
 
   const handleDeleteDocument = async () => {
     if (window.confirm('Are you sure you want to delete this document?')) {

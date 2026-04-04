@@ -15,9 +15,27 @@ exports.uploadDocument = async (req, res) => {
 
     const filePath = req.file.path;
     const originalname = req.file.originalname;
+    const fileExt = originalname.split('.').pop().toLowerCase();
+
+    console.log(`📄 Uploading file: ${originalname} (${fileExt})`);
 
     // Extract text from the uploaded file
-    const text = await extractTextFromFile(filePath, originalname);
+    let text;
+    try {
+      text = await extractTextFromFile(filePath, originalname);
+    } catch (extractErr) {
+      console.error(`❌ Text extraction failed for ${originalname}:`, extractErr.message);
+      // Cleanup the uploaded file
+      try {
+        await fs.promises.unlink(filePath);
+      } catch (unlinkErr) {
+        console.warn('Warning: Could not delete uploaded file:', unlinkErr.message);
+      }
+      return res.status(400).json({ 
+        error: `File processing failed: ${extractErr.message}`,
+        details: `Supported formats: PDF, DOCX, TXT. ${fileExt.toUpperCase()} files may not be supported or the file may be corrupted.`
+      });
+    }
 
     // Document data to be saved in Firestore
     const documentData = {
@@ -27,11 +45,14 @@ exports.uploadDocument = async (req, res) => {
       size: req.file.size,
       path: req.file.path, // Still storing path for potential temporary access or deletion
       text: text,
+      uploadedAt: new Date().toISOString(),
       createdAt: new Date().toISOString()
     };
     
     // Add a new document to the 'documents' collection in Firestore
     const docRef = await documentsCollection.add(documentData);
+
+    console.log(`✅ Document uploaded successfully: ${originalname} (ID: ${docRef.id})`);
 
     res.json({ 
       message: 'Document uploaded successfully', 
@@ -39,7 +60,15 @@ exports.uploadDocument = async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
+    console.error('❌ Upload error:', err);
+    // Cleanup the uploaded file if it exists
+    if (req.file && req.file.path) {
+      try {
+        await fs.promises.unlink(req.file.path);
+      } catch (unlinkErr) {
+        console.warn('Warning: Could not delete uploaded file:', unlinkErr.message);
+      }
+    }
     res.status(500).json({ error: err.message });
   }
 };
@@ -112,6 +141,22 @@ exports.getAllDocuments = async (req, res) => {
     const snapshot = await documentsCollection.orderBy('createdAt', 'desc').get();
     const documents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.json(documents);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Get a single document by ID
+exports.getDocumentById = async (req, res) => {
+  try {
+    const docRef = documentsCollection.doc(req.params.id);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    res.json({ id: doc.id, ...doc.data() });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

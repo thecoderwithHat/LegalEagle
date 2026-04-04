@@ -122,6 +122,9 @@ api.interceptors.response.use(
 export const fetchDocuments = () =>
   api.get('/');
 
+export const fetchDocument = (id) =>
+  api.get(`/${id}`);
+
 export const fetchDocumentAnalysis = (id) =>
   api.post(`/analyze/${id}`);
 
