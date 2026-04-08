@@ -117,12 +117,18 @@ exports.summarizeDocument = async (req, res) => {
     
     const documentData = doc.data();
     const activeAiConfig = getActiveAiConfig();
+    const requestedProvider = req.body?.provider;
+    const requestedModel = req.body?.model;
+    const effectiveAiConfig = {
+      provider: requestedProvider ? String(requestedProvider).trim().toLowerCase() : activeAiConfig.provider,
+      model: requestedModel ? String(requestedModel).trim() : activeAiConfig.model
+    };
     const cachedProvider = documentData.summaryMeta?.provider;
     const cachedModel = documentData.summaryMeta?.model;
     const isCacheMatch =
       documentData.summary &&
-      cachedProvider === activeAiConfig.provider &&
-      cachedModel === activeAiConfig.model;
+      cachedProvider === effectiveAiConfig.provider &&
+      cachedModel === effectiveAiConfig.model;
 
     // Reuse cached summary only if it matches active provider+model config.
     if (isCacheMatch) {
@@ -130,9 +136,9 @@ exports.summarizeDocument = async (req, res) => {
     }
 
     // Always use single-chunk summarization
-    const summary = await summarizeDocumentText(documentData.text);
+    const summary = await summarizeDocumentText(documentData.text, effectiveAiConfig);
     const summaryMeta = {
-      ...activeAiConfig,
+      ...effectiveAiConfig,
       generatedAt: new Date().toISOString()
     };
 

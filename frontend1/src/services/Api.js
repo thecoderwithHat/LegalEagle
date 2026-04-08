@@ -128,8 +128,8 @@ export const fetchDocument = (id) =>
 export const fetchDocumentAnalysis = (id) =>
   api.post(`/analyze/${id}`);
 
-export const fetchDocumentSummary = (id) =>
-  api.post(`/summarize/${id}`);
+export const fetchDocumentSummary = (id, options = {}) =>
+  api.post(`/summarize/${id}`, options);
 
 export const uploadDocument = (file, onUploadProgress) => {
   const formData = new FormData();

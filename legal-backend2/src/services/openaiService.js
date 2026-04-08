@@ -4,6 +4,8 @@ const { jsonrepair } = require('jsonrepair');
 const DEFAULT_PROVIDER = 'openrouter';
 const DEFAULT_OPENROUTER_MODEL = 'google/gemma-4-31b-it';
 const DEFAULT_GEMINI_MODEL = 'gemini-1.5-flash';
+const DEFAULT_OLLAMA_MODEL = 'llama3.1';
+const DEFAULT_OLLAMA_BASE_URL = 'http://127.0.0.1:11434';
 
 const normalizeEnvValue = (value) => {
   if (!value) return '';
@@ -16,10 +18,20 @@ const getActiveProvider = () =>
 
 const getActiveModel = (provider) => {
   if (provider === 'gemini') {
-    return (process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL).trim();
+    return (
+      process.env.GEMINI_MODEL ||
+      process.env.Gemini_MODEL ||
+      DEFAULT_GEMINI_MODEL
+    ).trim();
+  }
+  if (provider === 'ollama') {
+    return (process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL).trim();
   }
   return (process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL).trim();
 };
+
+const getOllamaBaseUrl = () =>
+  normalizeEnvValue(process.env.OLLAMA_BASE_URL) || DEFAULT_OLLAMA_BASE_URL;
 
 exports.getActiveAiConfig = () => {
   const provider = getActiveProvider();
@@ -140,7 +152,32 @@ const summarizeWithGemini = async (prompt, model) => {
     .trim();
 };
 
-exports.summarizeDocumentText = async (text) => {
+const summarizeWithOllama = async (prompt, model) => {
+  const baseUrl = getOllamaBaseUrl();
+
+  const response = await axios.post(
+    `${baseUrl}/api/generate`,
+    {
+      model,
+      prompt,
+      stream: false,
+      options: {
+        temperature: 0.4,
+        top_p: 0.9
+      }
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      timeout: 120000
+    }
+  );
+
+  return response.data?.response?.trim();
+};
+
+exports.summarizeDocumentText = async (text, overrideConfig = {}) => {
   if (!text || text.trim().length === 0) {
     throw new Error('No text provided for summarization');
   }
@@ -149,7 +186,9 @@ exports.summarizeDocumentText = async (text) => {
   const documentText = text.length > MAX_CHARS ? text.slice(0, MAX_CHARS) : text;
 
   const prompt = buildPrompt(documentText);
-  const { provider, model } = exports.getActiveAiConfig();
+  const activeConfig = exports.getActiveAiConfig();
+  const provider = (overrideConfig.provider || activeConfig.provider).trim().toLowerCase();
+  const model = (overrideConfig.model || getActiveModel(provider)).trim();
 
   try {
     let rawReply;
@@ -157,6 +196,8 @@ exports.summarizeDocumentText = async (text) => {
       rawReply = await summarizeWithGemini(prompt, model);
     } else if (provider === 'openrouter') {
       rawReply = await summarizeWithOpenRouter(prompt, model);
+    } else if (provider === 'ollama') {
+      rawReply = await summarizeWithOllama(prompt, model);
     } else {
       throw new Error(`Unsupported AI provider: ${provider}`);
     }

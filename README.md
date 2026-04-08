@@ -23,7 +23,7 @@ The Legal Document Analysis System is a platform to help legal professionals ana
 - **Frontend:** React + Tailwind CSS
 - **Backend:** Node.js (Express, serverless-ready)
 - **Database:** Firebase Firestore (no MongoDB required)
-- **AI/NLP:** OpenRouter or Gemini (backend-configured provider)
+- **AI/NLP:** OpenRouter, Gemini, or local Ollama
 - **Deployment:** Vercel (monorepo, serverless functions)
 
 ---
@@ -34,7 +34,7 @@ The Legal Document Analysis System is a platform to help legal professionals ana
 - Node.js (v16 or above)
 - npm or yarn
 - Firebase project (with Firestore enabled)
-- OpenRouter API key or Gemini API key
+- OpenRouter API key, Gemini API key, or local Ollama runtime
 
 ### 1. Clone the repository
 ```bash
@@ -61,12 +61,15 @@ GEMINI_API_KEY=your_gemini_api_key
 AI_PROVIDER=openrouter
 OPENROUTER_MODEL=google/gemma-4-31b-it
 GEMINI_MODEL=gemini-1.5-flash
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=llama3.1
 ```
 
 Provider notes:
-- `AI_PROVIDER` supports `openrouter` and `gemini`.
+- `AI_PROVIDER` supports `openrouter`, `gemini`, and `ollama`.
 - If `AI_PROVIDER` is not set, backend defaults to `openrouter`.
-- `OPENROUTER_MODEL` and `GEMINI_MODEL` are optional overrides.
+- `OPENROUTER_MODEL`, `GEMINI_MODEL`, and `OLLAMA_MODEL` are optional overrides.
+- For Ollama, ensure the model is pulled locally first (example: `ollama pull llama3.1`).
 
 ### 5. Start the Backend
 ```bash
@@ -93,8 +96,11 @@ npm start
    - `OPENROUTER_API_KEY` (your OpenRouter API key)
    - `GEMINI_API_KEY` (required only when `AI_PROVIDER=gemini`)
    - `AI_PROVIDER` (`openrouter` or `gemini`)
+   - `AI_PROVIDER` (`openrouter`, `gemini`, or `ollama`)
    - `OPENROUTER_MODEL` (optional OpenRouter model override)
    - `GEMINI_MODEL` (optional Gemini model override)
+   - `OLLAMA_BASE_URL` (required for Ollama provider)
+   - `OLLAMA_MODEL` (optional Ollama model override)
    - `FIREBASE_SERVICE_ACCOUNT` (paste the entire contents of your `serviceAccountKey.json` as a single value)
 4. **Deploy!**
 
@@ -126,10 +132,23 @@ Vercel will build both the frontend and backend automatically using the `vercel.
 
 ## Usage Notes
 - AI summarization requires the API key for the selected provider (`OPENROUTER_API_KEY` or `GEMINI_API_KEY`)
+- Ollama summarization uses local runtime and does not require an API key
 - Firestore is used for all document storage and metadata
 - Rate limiting is enabled for AI endpoints (3 requests/minute per IP)
 - Summary cache includes provider/model metadata, so changing providers regenerates cached summaries automatically
 - For production, set all secrets in Vercel's Environment Variables UI
+
+### Runtime Override API
+`POST /api/docs/summarize/:id` accepts an optional JSON body:
+
+```json
+{
+   "provider": "ollama",
+   "model": "llama3.1"
+}
+```
+
+If omitted, backend falls back to env-based provider/model config.
 
 ---
 
