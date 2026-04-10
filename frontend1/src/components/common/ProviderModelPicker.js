@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 const PROVIDER_MODELS = {
   openrouter: ['google/gemma-4-31b-it'],
   gemini: ['gemini-1.5-flash', 'gemini-3-flash-preview'],
-  ollama: ['llama3.1', 'qwen2.5:7b', 'mistral:7b']
+  ollama: ['qwen3.5:0.8b', 'qwen2.5:7b', 'mistral:7b']
 };
 
 export default function ProviderModelPicker({

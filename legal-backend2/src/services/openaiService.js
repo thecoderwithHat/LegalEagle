@@ -1,10 +1,10 @@
 const axios = require('axios');
 require('dotenv').config();
 const { jsonrepair } = require('jsonrepair');
-const DEFAULT_PROVIDER = 'openrouter';
+const DEFAULT_PROVIDER = 'ollama';
 const DEFAULT_OPENROUTER_MODEL = 'google/gemma-4-31b-it';
 const DEFAULT_GEMINI_MODEL = 'gemini-1.5-flash';
-const DEFAULT_OLLAMA_MODEL = 'llama3.1';
+const DEFAULT_OLLAMA_MODEL = 'qwen3.5:0.8b';
 const DEFAULT_OLLAMA_BASE_URL = 'http://127.0.0.1:11434';
 
 const normalizeEnvValue = (value) => {

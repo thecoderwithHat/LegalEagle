@@ -38,13 +38,13 @@ export default function DocumentDetail() {
   const [document, setDocument] = useState(location.state?.document || null);
   const [loading, setLoading] = useState(!document); // Only load if we don't have the doc
   const [summaryLoading, setSummaryLoading] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState('openrouter');
-  const [selectedModel, setSelectedModel] = useState('google/gemma-4-31b-it');
+  const [selectedProvider, setSelectedProvider] = useState('ollama');
+  const [selectedModel, setSelectedModel] = useState('qwen3.5:0.8b');
 
   const providerModelMap = {
     openrouter: ['google/gemma-4-31b-it'],
     gemini: ['gemini-1.5-flash', 'gemini-3-flash-preview'],
-    ollama: ['llama3.1', 'qwen2.5:7b', 'mistral:7b']
+    ollama: ['qwen3.5:0.8b', 'qwen2.5:7b', 'mistral:7b']
   };
 
   useEffect(() => {

@@ -62,14 +62,14 @@ AI_PROVIDER=openrouter
 OPENROUTER_MODEL=google/gemma-4-31b-it
 GEMINI_MODEL=gemini-1.5-flash
 OLLAMA_BASE_URL=http://127.0.0.1:11434
-OLLAMA_MODEL=llama3.1
+OLLAMA_MODEL=qwen3.5:0.8b
 ```
 
 Provider notes:
 - `AI_PROVIDER` supports `openrouter`, `gemini`, and `ollama`.
 - If `AI_PROVIDER` is not set, backend defaults to `openrouter`.
 - `OPENROUTER_MODEL`, `GEMINI_MODEL`, and `OLLAMA_MODEL` are optional overrides.
-- For Ollama, ensure the model is pulled locally first (example: `ollama pull llama3.1`).
+- For Ollama, ensure the model is pulled locally first (example: `ollama pull qwen3.5:0.8b`).
 
 ### 5. Start the Backend
 ```bash
@@ -144,7 +144,7 @@ Vercel will build both the frontend and backend automatically using the `vercel.
 ```json
 {
    "provider": "ollama",
-   "model": "llama3.1"
+   "model": "qwen3.5:0.8b"
 }
 ```
 
