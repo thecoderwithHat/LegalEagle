@@ -6,6 +6,9 @@ const DEFAULT_OPENROUTER_MODEL = 'google/gemma-4-31b-it';
 const DEFAULT_GEMINI_MODEL = 'gemini-1.5-flash';
 const DEFAULT_OLLAMA_MODEL = 'qwen3.5:0.8b';
 const DEFAULT_OLLAMA_BASE_URL = 'http://127.0.0.1:11434';
+const DEFAULT_OLLAMA_TIMEOUT_MS = 300000;
+const DEFAULT_OLLAMA_MAX_CHARS = 2500;
+const DEFAULT_OLLAMA_FALLBACK_MAX_CHARS = 1200;
 
 const normalizeEnvValue = (value) => {
   if (!value) return '';
@@ -32,6 +35,20 @@ const getActiveModel = (provider) => {
 
 const getOllamaBaseUrl = () =>
   normalizeEnvValue(process.env.OLLAMA_BASE_URL) || DEFAULT_OLLAMA_BASE_URL;
+
+const getPositiveIntFromEnv = (value, fallback) => {
+  const parsed = Number.parseInt(String(value || ''), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const getOllamaTimeoutMs = () =>
+  getPositiveIntFromEnv(process.env.OLLAMA_TIMEOUT_MS, DEFAULT_OLLAMA_TIMEOUT_MS);
+
+const getOllamaMaxChars = () =>
+  getPositiveIntFromEnv(process.env.OLLAMA_MAX_CHARS, DEFAULT_OLLAMA_MAX_CHARS);
+
+const getOllamaFallbackMaxChars = () =>
+  getPositiveIntFromEnv(process.env.OLLAMA_FALLBACK_MAX_CHARS, DEFAULT_OLLAMA_FALLBACK_MAX_CHARS);
 
 exports.getActiveAiConfig = () => {
   const provider = getActiveProvider();
@@ -152,7 +169,7 @@ const summarizeWithGemini = async (prompt, model) => {
     .trim();
 };
 
-const summarizeWithOllama = async (prompt, model) => {
+const summarizeWithOllama = async (prompt, model, timeoutMs = getOllamaTimeoutMs()) => {
   const baseUrl = getOllamaBaseUrl();
 
   const response = await axios.post(
@@ -170,7 +187,7 @@ const summarizeWithOllama = async (prompt, model) => {
       headers: {
         'Content-Type': 'application/json'
       },
-      timeout: 120000
+      timeout: timeoutMs
     }
   );
 
@@ -182,13 +199,14 @@ exports.summarizeDocumentText = async (text, overrideConfig = {}) => {
     throw new Error('No text provided for summarization');
   }
 
-  const MAX_CHARS = 3000;
-  const documentText = text.length > MAX_CHARS ? text.slice(0, MAX_CHARS) : text;
-
-  const prompt = buildPrompt(documentText);
   const activeConfig = exports.getActiveAiConfig();
   const provider = (overrideConfig.provider || activeConfig.provider).trim().toLowerCase();
   const model = (overrideConfig.model || getActiveModel(provider)).trim();
+
+  const defaultMaxChars = 3000;
+  const maxChars = provider === 'ollama' ? getOllamaMaxChars() : defaultMaxChars;
+  const documentText = text.length > maxChars ? text.slice(0, maxChars) : text;
+  const prompt = buildPrompt(documentText);
 
   try {
     let rawReply;
@@ -197,7 +215,19 @@ exports.summarizeDocumentText = async (text, overrideConfig = {}) => {
     } else if (provider === 'openrouter') {
       rawReply = await summarizeWithOpenRouter(prompt, model);
     } else if (provider === 'ollama') {
-      rawReply = await summarizeWithOllama(prompt, model);
+      try {
+        rawReply = await summarizeWithOllama(prompt, model);
+      } catch (ollamaErr) {
+        const timedOut = ollamaErr.code === 'ECONNABORTED' || String(ollamaErr.message || '').toLowerCase().includes('timeout');
+        if (!timedOut) {
+          throw ollamaErr;
+        }
+
+        const fallbackMaxChars = Math.min(getOllamaFallbackMaxChars(), documentText.length);
+        const fallbackText = fallbackMaxChars > 0 ? documentText.slice(0, fallbackMaxChars) : documentText;
+        const fallbackPrompt = buildPrompt(fallbackText);
+        rawReply = await summarizeWithOllama(fallbackPrompt, model, getOllamaTimeoutMs());
+      }
     } else {
       throw new Error(`Unsupported AI provider: ${provider}`);
     }

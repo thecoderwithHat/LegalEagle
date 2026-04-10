@@ -6,7 +6,6 @@ import { fetchDocument, fetchDocumentAnalysis, fetchDocumentSummary, deleteDocum
 import AnalysisSection from '../components/common/AnalysisSection';
 import RiskChart from '../components/documents/RiskChart';
 import EntityVisualization from '../components/documents/EntityVisualization';
-import ProviderModelPicker from '../components/common/ProviderModelPicker';
 
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null };
@@ -38,43 +37,17 @@ export default function DocumentDetail() {
   const [document, setDocument] = useState(location.state?.document || null);
   const [loading, setLoading] = useState(!document); // Only load if we don't have the doc
   const [summaryLoading, setSummaryLoading] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState('ollama');
-  const [selectedModel, setSelectedModel] = useState('qwen3.5:0.8b');
 
-  const providerModelMap = {
-    openrouter: ['google/gemma-4-31b-it'],
-    gemini: ['gemini-1.5-flash', 'gemini-3-flash-preview'],
-    ollama: ['qwen3.5:0.8b', 'qwen2.5:7b', 'mistral:7b']
-  };
-
-  useEffect(() => {
-    const firstModel = providerModelMap[selectedProvider]?.[0];
-    if (!firstModel) return;
-
-    const modelStillValid = providerModelMap[selectedProvider].includes(selectedModel);
-    if (!modelStillValid) {
-      setSelectedModel(firstModel);
-    }
-  }, [selectedProvider, selectedModel]);
-
-  const runSummary = async (documentId, provider, model) => {
+  const runSummary = async (documentId) => {
     setSummaryLoading(true);
     try {
-      const payload = provider && model ? { provider, model } : {};
-      const summaryRes = await fetchDocumentSummary(documentId, payload);
+      const summaryRes = await fetchDocumentSummary(documentId, {});
       if (summaryRes.data.summary) {
         setDocument(prevDoc => ({
           ...prevDoc,
           analysis: { ...prevDoc?.analysis, ...summaryRes.data.summary },
           summaryMeta: summaryRes.data.summaryMeta
         }));
-
-        if (summaryRes.data.summaryMeta?.provider) {
-          setSelectedProvider(summaryRes.data.summaryMeta.provider);
-        }
-        if (summaryRes.data.summaryMeta?.model) {
-          setSelectedModel(summaryRes.data.summaryMeta.model);
-        }
       }
     } catch (error) {
       console.error('Failed to fetch summary:', error);
@@ -134,11 +107,6 @@ export default function DocumentDetail() {
     }
   };
 
-  const handleApplyAiRuntime = async () => {
-    if (!id) return;
-    await runSummary(id, selectedProvider, selectedModel);
-  };
-
   if (loading) {
     return (
       <div className="pt-24 flex justify-center">
@@ -165,15 +133,6 @@ export default function DocumentDetail() {
   return (
     <ErrorBoundary>
       <div className="pt-24 px-4 max-w-7xl mx-auto">
-        <ProviderModelPicker
-          provider={selectedProvider}
-          model={selectedModel}
-          onProviderChange={setSelectedProvider}
-          onModelChange={setSelectedModel}
-          onApply={handleApplyAiRuntime}
-          loading={summaryLoading}
-        />
-
         <div className="flex justify-between items-start mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{document.originalname || 'Document'}</h1>
